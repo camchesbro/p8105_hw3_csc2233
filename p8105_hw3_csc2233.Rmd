@@ -1,0 +1,93 @@
+---
+title: "p8105_hw3_csc2233"
+author: "Cameron Chesbrough"
+date: "2024-10-12"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+```
+
+## Question 2
+
+```{r}
+
+# Data Import and Cleaning
+
+accel_df = read_csv(file = "./datasets/nhanes_accel.csv")
+covar_df = read_csv(file = "./datasets/nhanes_covar.csv",
+                    skip = 4)
+
+accel_df = accel_df %>%
+  janitor::clean_names()
+
+covar_df = covar_df %>%
+  janitor::clean_names() %>%
+  filter(age >= 21) %>%
+  drop_na()
+
+covar_df$sex = as.factor(covar_df$sex)
+covar_df$education = as.factor(covar_df$education)
+
+accel_w_covar = inner_join(covar_df, accel_df, by = c("seqn" = "seqn"))
+
+# Creation of Table and Bargraph to compare Education and Sex
+
+education_sex_counts = accel_w_covar %>%
+  group_by(education, sex) %>%
+  summarise(n_obs = n())
+
+knitr::kable(education_sex_counts %>% 
+  pivot_wider(names_from = education, values_from = n_obs),
+  col.names = c("Sex", "Less than Highschool", "Highschool or Equivalent", "More than Highschool"),
+  align = "cccc",
+  caption = "Count of Men and Women in each Education Category")
+
+education_sex_plot = ggplot(data = education_sex_counts,
+                            aes(x = education, y = n_obs, fill = sex)) +
+  geom_bar(stat = "identity", position = position_dodge(), alpha = 0.75) +
+  labs(title = "Bargraph of Education comparing by Sex",
+    x = "Education",
+    y = "Number of Observations",
+    fill = "Sex") +
+  scale_x_discrete(labels=c("Less than Highschool","Highschool or Equivalent","More than Highschool")) +
+  scale_fill_discrete(labels=c("Male", "Female")) +
+  theme_bw()
+
+education_sex_plot
+
+# Activity and Age
+
+total_act = accel_w_covar %>%
+  mutate(actsum = select(., min1:min1440) %>% rowSums())
+
+total_act_plot = ggplot(data = total_act,
+                        aes(x = age, y = actsum, color = sex)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  facet_grid(rows="education") +
+    labs(title = "Lineplot of Activity and Age for each Sex",
+    x = "Age",
+    y = "Accelerometer Data Sum",
+    color = "Sex") +
+  scale_color_discrete(labels=c("Male", "Female")) +
+  theme_bw()
+
+total_act_plot
+
+# 24 Hour Activity 
+
+
+
+```
+
+
+
+
+
+
