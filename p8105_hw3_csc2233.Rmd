@@ -82,12 +82,138 @@ total_act_plot
 
 # 24 Hour Activity 
 
+trying = pivot_longer(accel_w_covar,
+                      min1:min1440,
+                      names_to = "minute",
+                      values_to = "accel")
 
+trying_groop = trying %>%
+  group_by(minute, sex, education) %>%
+  summarise(acl_mean = mean(accel)) %>%
+  mutate(minute = str_sub(minute, 4, -1)) %>%
+  mutate(minute = as.numeric(minute)) %>%
+  arrange(minute)
+
+plot_acts = ggplot(data = trying_groop,
+                   aes(x = minute, y = acl_mean, fill = sex)) +
+  geom_col() +
+  facet_grid(. ~ education) +
+    labs(title = "Mean Activity per Minute",
+    x = "Minutes",
+    y = "Accelerometer Data",
+    fill = "Sex") +
+  scale_fill_discrete(labels=c("Male", "Female")) +
+  theme_bw()
 
 ```
 
 
+# Question 3
 
+```{r}
+
+# Data Import and Cleaning
+
+jan20_df = read_csv(file = "./datasets/Jan 2020 Citi.csv")
+jul20_df = read_csv(file = "./datasets/July 2020 Citi.csv")
+jan24_df = read_csv(file = "./datasets/Jan 2024 Citi.csv")
+jul24_df = read_csv(file = "./datasets/July 2024 Citi.csv")
+
+month_year = rep("Jan_20", nrow(jan20_df))
+jan20_df = jan20_df %>%
+  janitor::clean_names() %>%
+  cbind(month_year) %>%
+  drop_na()
+
+month_year = rep("Jul_20", nrow(jul20_df))
+jul20_df = jul20_df %>%
+  janitor::clean_names() %>%
+  cbind(month_year) %>%
+  drop_na()
+
+month_year = rep("Jan_24", nrow(jan24_df))
+jan24_df = jan24_df %>%
+  janitor::clean_names() %>%
+  cbind(month_year) %>%
+  drop_na()
+
+month_year = rep("Jul_24", nrow(jul24_df))
+jul24_df = jul24_df %>%
+  janitor::clean_names() %>%
+  cbind(month_year) %>%
+  drop_na()
+
+all_dates = bind_rows(jan20_df, jul20_df, jan24_df, jul24_df)
+
+# Table Creation
+
+date_membership_counts = all_dates %>%
+  group_by(month_year, member_casual) %>%
+  summarise(n_obs = n())
+
+knitr::kable(date_membership_counts %>% 
+  pivot_wider(names_from = month_year, values_from = n_obs),
+  col.names = c("Membership Status", "January 2020",
+                "January 2024", "July 2020", "July 2024"),
+  align = "cccc",
+  caption = "Count of Members and Casual Riders n in each Date/Year Category")
+
+# Popular Stations
+
+jul24_popstations = all_dates %>%
+  filter(month_year == "Jul_24") %>%
+  group_by(start_station_name, month_year) %>%
+  summarise(n_obs = n()) %>%
+  select(-month_year) %>%
+  arrange(desc(n_obs)) %>%
+  head(5)
+
+knitr::kable(jul24_popstations,
+  align = "cc",
+  col.names = c("Station", "Rides"),
+  caption = "Most Popular Starting Stations in July 2024")
+
+# Day/Month/Year
+
+day_monthyear_counts = all_dates %>%
+  group_by(weekdays, month_year) %>%
+  summarise(meds = median(duration)) %>%
+  mutate(Day_Month_Year = paste(weekdays, month_year)) %>%
+  mutate(weekdays = factor(weekdays, levels = c("Monday", "Tuesday", "Wednesday",
+                                                "Thursday", "Friday", "Saturday",
+                                                "Sunday")))
+
+day_plot = ggplot(data = day_monthyear_counts,
+                  aes(x = weekdays, y = meds,
+                      group = month_year, color = month_year)) +
+  geom_line() +
+  geom_point() +
+  ylim(c(0,20)) +
+  labs(title = "Median Ride Lengths in Minutes",
+    x = "Day of Week",
+    y = "Median Length of Ride in Minutes",
+    color = "Month and Year") +
+  scale_color_discrete(labels=c("January 2020", "January 2024",
+                                "July 2020", "July 2024")) +
+  theme_bw()
+
+day_plot
+
+# 2024 Only Plot
+
+only_24 = all_dates %>%
+  filter(month_year %in% c("Jan_24", "Jul_24"))
+
+comparing_vars = ggplot(data = only_24) +
+  geom_boxplot(aes(duration, member_casual)) +
+  geom_boxplot(aes(duration, rideable_type)) +
+  geom_boxplot(aes(duration, month_year)) +
+  labs(title = "Duration of Rides in Minutes by Multiple Categories",
+    x = "Ride Length in Minutes",
+    y = "Ride Descriptor") +
+  theme_bw()
+
+```
 
 
 
