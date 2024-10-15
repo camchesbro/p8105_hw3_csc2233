@@ -48,18 +48,31 @@ knitr::kable(education_sex_counts %>%
   align = "cccc",
   caption = "Count of Men and Women in each Education Category")
 
-education_sex_plot = ggplot(data = education_sex_counts,
-                            aes(x = education, y = n_obs, fill = sex)) +
-  geom_bar(stat = "identity", position = position_dodge(), alpha = 0.75) +
-  labs(title = "Bargraph of Education comparing by Sex",
-    x = "Education",
-    y = "Number of Observations",
-    fill = "Sex") +
-  scale_x_discrete(labels=c("Less than Highschool","Highschool or Equivalent","More than Highschool")) +
-  scale_fill_discrete(labels=c("Male", "Female")) +
-  theme_bw()
+education_age = accel_w_covar %>%
+  group_by(education, age, sex) %>%
+  summarise(n_obs = n()) %>%
+  mutate(comb_edu_sex = paste(education, sex))
 
-education_sex_plot
+edu_age_plot = ggplot(data = education_age) +
+  geom_boxplot(aes(comb_edu_sex, age)) +
+  labs(title = "Age Distribution by Highest Achieved Education and Sex",
+    x = "Education and Age",
+    y = "Age in Years") +
+   scale_x_discrete(labels = c("Less than HS Men",
+                                "Less than HS Women",
+                                "HS Men", "HS Women",
+                                "Greater than HS Men",
+                                "Greater than HS Women")) +
+  theme_bw() +
+  theme(text = element_text(size=7))
+
+edu_age_plot
+
+```
+
+Looking first at the table, there are much more participants in the sample with greater than a highschool education. There is not much of gender difference in the less than a highschool education and greater than a highschool education, but there are 12 more men than women in the sample with a highschool or equivalent. Moving to the visualization, it seems like highschool women and greater than highschool men have a lower median age. All categories seem relatively spread; for most categories half of the observations fall between ages 65 and 45.
+
+```{r}
 
 # Activity and Age
 
@@ -80,21 +93,27 @@ total_act_plot = ggplot(data = total_act,
 
 total_act_plot
 
+```
+
+In both highschool and greater than highschool women generally record higher in activity while both sexes eventually become closer as age increases; however in less than highschool women initally have higher activity, but the men overtake this around age 50. Less than highschool appears slightly more active before age 40 and highschool is less active at age 60.
+
+```{r}
+
 # 24 Hour Activity 
 
-trying = pivot_longer(accel_w_covar,
+minutes = pivot_longer(accel_w_covar,
                       min1:min1440,
                       names_to = "minute",
                       values_to = "accel")
 
-trying_groop = trying %>%
+minutes_group = minutes %>%
   group_by(minute, sex, education) %>%
   summarise(acl_mean = mean(accel)) %>%
   mutate(minute = str_sub(minute, 4, -1)) %>%
   mutate(minute = as.numeric(minute)) %>%
   arrange(minute)
 
-plot_acts = ggplot(data = trying_groop,
+plot_acts = ggplot(data = minutes_group,
                    aes(x = minute, y = acl_mean, fill = sex)) +
   geom_col() +
   facet_grid(. ~ education) +
@@ -105,7 +124,11 @@ plot_acts = ggplot(data = trying_groop,
   scale_fill_discrete(labels=c("Male", "Female")) +
   theme_bw()
 
+plot_acts
+
 ```
+
+All groups start low and shrink lower still and reach their lowest activity levels around 4:00 in the morning. Activity levels will start to rise sharply, peaking around 12:30 in the afternoon. In the less than highschool category, the overall pattern changes faster; the other two categories almost have a flat top of activity from 8:30 to 9:00. 
 
 
 # Question 3
@@ -145,6 +168,12 @@ jul24_df = jul24_df %>%
 
 all_dates = bind_rows(jan20_df, jul20_df, jan24_df, jul24_df)
 
+```
+
+This dataset describes the usage of citibikes across four windows of time. Duration, membership, and station are among the variables recorded. It includes 8 total variables and 999253 observations. 
+
+```{r}
+
 # Table Creation
 
 date_membership_counts = all_dates %>%
@@ -157,6 +186,12 @@ knitr::kable(date_membership_counts %>%
                 "January 2024", "July 2020", "July 2024"),
   align = "cccc",
   caption = "Count of Members and Casual Riders n in each Date/Year Category")
+
+```
+
+Overall citibikes are used much more in July than in January. There was also a big jump in usage from 2020 to 2024 among both casual users and members. It would seem that causal riders were more likely to use citibikes in the summer, but in 2024 there was a very large jump in members. 
+
+```{r}
 
 # Popular Stations
 
@@ -199,6 +234,12 @@ day_plot = ggplot(data = day_monthyear_counts,
 
 day_plot
 
+```
+
+The median ride length was signifigantly higher in July 2020 than the other time periods. The second highest was the other July period, but to a lesser degree. Saturday appears to be the most popular day, followed by Sunday (with the exception of January 2024). 
+
+```{r}
+
 # 2024 Only Plot
 
 only_24 = all_dates %>%
@@ -213,7 +254,9 @@ comparing_vars = ggplot(data = only_24) +
     y = "Ride Descriptor") +
   theme_bw()
 
+comparing_vars
+
 ```
 
-
+It appears that causal riders had longer durations than their member couterparts. July alos saw longer rides than January. There was little difference between classic and electric bikes.
 
